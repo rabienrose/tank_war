@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/slow_bullet/war.unity
+    path: Assets/war/war.unity
     guid: 239cbd3f716374738b6ca3b3222f572d
   m_configObjects: {}

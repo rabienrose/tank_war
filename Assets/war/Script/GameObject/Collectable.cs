@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 public class Collectable : MonoBehaviour
 {
     public bool respawn=true;
@@ -7,12 +8,17 @@ public class Collectable : MonoBehaviour
     public float value;
     public string bullet_type;
     float cul_time=0;
-    public float RespawnTime;
+    public float respawn_time;
     public GameObject render_obj;
     public Battle battle;
-    void Start () {
-    }    
+    Transform tip_hub;
+    public string tip;
 
+    void Start () {
+        Text tip_text = transform.GetChild(2).GetChild(0).GetChild(0).GetComponent<Text>();
+        tip_text.text=tip;
+        tip_hub=transform.GetChild(2);
+    }    
     public bool IsEmpty(){
         if (render_obj.activeSelf){
             return false;
@@ -20,12 +26,10 @@ public class Collectable : MonoBehaviour
             return true;
         }
     }
-
     public void ResetCollect(){
         render_obj.SetActive(true);
         cul_time=0;
     }
-
     void OnTriggerEnter(Collider col)
     {
         if (render_obj.activeSelf==false){
@@ -34,14 +38,15 @@ public class Collectable : MonoBehaviour
         GameObject obj = col.gameObject;
         if (obj.tag=="Player"){
             PlayerAttr player = col.GetComponent<PlayerAttr>();
-            int bullet_id = battle.bullet_id_table[collectable_type];
+            col.GetComponent<PlayerAgent>().AddRewardCustom(0.1f,"col");
+            int bullet_id = battle.collectable_id_table[this];
             if (collectable_type=="HP"){
                 player.ResetHp();                
             }else if(collectable_type=="MP"){
                 player.ResetMp();  
             }else if(collectable_type=="SHOOT_COUNT"){
                 player.AddShootCount();
-            }else if(collectable_type=="BULLET_BOUNCE"){
+            }else if(collectable_type=="BOUNCE_COUNT"){
                 player.AddBulletBounce();
             }else if(collectable_type=="HP_REC"){
                 player.AddHPRecover(value);
@@ -61,16 +66,20 @@ public class Collectable : MonoBehaviour
             render_obj.SetActive(false);
         }
     }
-
-    
-
+    public void ToggleTip(){
+        if (tip_hub.gameObject.activeSelf){
+            tip_hub.gameObject.SetActive(false);
+        }else{
+            tip_hub.gameObject.SetActive(true);
+        }
+    }
     void FixedUpdate(){
         if (respawn==false){
             return;
         }
         if (IsEmpty()){
             cul_time=cul_time+Time.fixedDeltaTime;
-            if (cul_time>RespawnTime){
+            if (cul_time>respawn_time){
                 ResetCollect();
             }
         }

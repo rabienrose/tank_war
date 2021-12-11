@@ -14,9 +14,11 @@ public class PlayerAgent : Agent
     public Battle battle;
     PlayerAttr attr;
     PlayerAction player_action;
+    int debug_count=0;
 
     void Start () {
         attr=GetComponent<PlayerAttr>();
+        player_action=GetComponent<PlayerAction>();
     }
 
     public override void OnEpisodeBegin(){
@@ -25,29 +27,34 @@ public class PlayerAgent : Agent
     
     public override void CollectObservations(VectorSensor sensor)
     {
-        if(attr.dead){
-            return;
-        }
-        // GiveRewardOnLoc();
-        float[] obs = attr.GetPlayerObs();
+        float[] obs = attr.GetPlayerObs(attr);
+        sensor.AddObservation(obs);
         PlayerAttr[] players = battle.GetAllPlayers();
         for (int i=0; i<players.Length; i++){
             if (players[i]==attr){
                 continue;
             }
-            obs = players[i].GetPlayerObs();
+            obs = players[i].GetPlayerObs(attr);
             sensor.AddObservation(obs);
         }
+        sensor.AddObservation(player_action.GetBulletObs());        
+        sensor.AddObservation(player_action.GetCollectableObs());
+        // float[] ret=battle.GetCollectableObs();
+        // debug_count=debug_count+1;
+        // if (gameObject.name=="Red" && debug_count%5==0){
+        //     string debug_str="";
+        //     for (int i=0; i<ret.Length;i++){
+        //         debug_str=debug_str+" "+ret[i].ToString();
+        //     }
+        //     Debug.Log(debug_str);
+        // }
     }
-    public override void WriteDiscreteActionMask(IDiscreteActionMask actionMask)
-    {
-        if (attr.dead){
-            return;
-        }
-        if (attr.mp<10){
-            actionMask.SetActionEnabled(0, 1, false);
-        }
-    }
+    // public override void WriteDiscreteActionMask(IDiscreteActionMask actionMask)
+    // {
+    //     if (attr.mp<10){
+    //         actionMask.SetActionEnabled(0, 1, false);
+    //     }
+    // }
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
         PlayerAction.Action act = new PlayerAction.Action();

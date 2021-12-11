@@ -14701,6 +14701,8 @@ MonoBehaviour:
   bullet_type: LIFESTEAL
   value: 0.1
   max_value: 0.5
+  fx_hit: {fileID: 1090680790622714, guid: ed39d981b7676644cbf66a3052d946c8, type: 3}
+  fx_muzzle: {fileID: 1787985205539338, guid: b74de9f997b879140ba69a8268e82e8e, type: 3}
 --- !u!135 &-8398441030744305005
 SphereCollider:
   m_ObjectHideFlags: 0

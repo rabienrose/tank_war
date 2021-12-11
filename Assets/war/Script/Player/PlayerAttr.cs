@@ -20,21 +20,17 @@ public class PlayerAttr : MonoBehaviour
     public int death_count=0;
     public float last_battle_time=0;
     public float recover_time=0;
-    public float min_distance_2_center=9999;
-    public float min_distance_2_safe=9999;
     public bool give_reward_to_damage=false;
     public float[] bufs;
     public int mp=100;
     public int hp=100;
-    public bool dead=true;
     public string bullet_type; 
     public float bullet_value=0;
-    public float bullet_max_value=0;
-    public float def=0f;
-    public int atk=19;
+    public float def=0.5f;
+    public int atk=38;
     // max var
-    public int max_mp_recover=20;
-    public int max_hp_recover=20;
+    public int max_mp_recover=0;
+    public int max_hp_recover=0;
     public float max_mov_spd=5;
     public float max_luk=0.8f;
     public int max_range=40;
@@ -47,13 +43,15 @@ public class PlayerAttr : MonoBehaviour
     int base_mp_recover=0;
     int base_hp_recover=0;
     float base_mov_spd=5f;
-    float base_luk=0f;
+    float base_luk=0.1f;
     int base_range=5;
     int base_bullet_spd=10;
     int base_shoot_count=1;
     int base_bounce_count=0;
+    int debug_count=0;
     // config
-    public string PlayerName;
+    public string color_str;
+    
     
     // Comp
     public Battle battle;
@@ -74,7 +72,7 @@ public class PlayerAttr : MonoBehaviour
             bool has_player=false;
             for (int j=0; j<players.Length; j++){
                 float t_dis=(players[j].transform.localPosition-battle.spawn_posis[i].localPosition).magnitude;
-                if (t_dis<5){
+                if (t_dis<3){
                     has_player=true;
                     break;
                 }
@@ -94,37 +92,58 @@ public class PlayerAttr : MonoBehaviour
         bullet_spd=0;
         shoot_count=0;
         bounce_count=0;
-        kill_count=0;
-        death_count=0;
         last_battle_time=0;
-        recover_time=0;
-        min_distance_2_center=9999;
-        min_distance_2_safe=9999;
         give_reward_to_damage=false;
         bufs=new float[battle.buf_list.Length];
         mp=max_mp;
         hp=max_hp;
-        dead=true;
-        bullet_type=""; 
+        bullet_type="VANILLA"; 
+        bullet_value=0;
         visual.UpdateHpMpUI();
+        battle.UpdateAttrText();
     }
-    void GiveRewardOnLoc(){
-        Vector3 tmp_cur_psoi=transform.localPosition;
-        float dist_2_center=tmp_cur_psoi.magnitude;
-        if (min_distance_2_center>dist_2_center){
-            float diff_dis=min_distance_2_center-dist_2_center;
-            if (min_distance_2_center<30){
-                agent.AddRewardCustom(diff_dis*0.05f, "loc");
-            }
-            min_distance_2_center=dist_2_center;
+    public void ClearStats(){
+        kill_count=0;
+        death_count=0;
+    }
+
+    public string GetAttrStr(){
+        string out_str="";
+        if (hp_recover>0){
+            out_str=out_str+"+"+hp_recover.ToString()+" Hp Recover"+"\n";
         }
+        if (mp_recover>0){
+            out_str=out_str+"+"+mp_recover.ToString()+" Mp Recover"+"\n";
+        }
+        if (luk>0){
+            out_str=out_str+"+"+luk.ToString()+" Luk"+"\n";
+        }
+        if (range>0){
+            out_str=out_str+"+"+range.ToString()+" Range"+"\n";
+        }
+        if (mov_spd>0){
+            out_str=out_str+"+"+mov_spd.ToString()+" Mov Speed"+"\n";
+        }
+        if (bullet_spd>0){
+            out_str=out_str+"+"+bullet_spd.ToString()+" Bullet Spd"+"\n";
+        }
+        if (bounce_count>0){
+            out_str=out_str+"+"+bounce_count.ToString()+" Bounce"+"\n";
+        }
+        if (shoot_count>0){
+            out_str=out_str+"+"+shoot_count.ToString()+" Shoot"+"\n";
+        }
+        if (bullet_type!="VANILLA"){
+            out_str=out_str+"+"+Math.Round(bullet_value, 2).ToString()+" "+bullet_type+"\n";
+        }
+        return out_str;
     }
-    public float[] GetPlayerObs(){
+    public float[] GetPlayerObs(PlayerAttr master){
         float[] ret=new float[13+bufs.Length+battle.bullet_list.Length];
         int temp_point=0;
-        ret[temp_point]=transform.localPosition.x/battle.field_w+0.5f; //1
+        ret[temp_point]=(transform.localPosition.x-master.transform.localPosition.x)/battle.field_w; //1
         temp_point++;
-        ret[temp_point]=transform.localPosition.z/battle.field_h+0.5f; //2
+        ret[temp_point]=(transform.localPosition.z-master.transform.localPosition.x)/battle.field_h; //2
         temp_point++;
         ret[temp_point]=transform.localEulerAngles.y/360; //3
         temp_point++;
@@ -152,8 +171,9 @@ public class PlayerAttr : MonoBehaviour
             ret[temp_point]=bufs[i]/battle.buf_list[i].max_buf_time;
             temp_point++;
         }
-        for (int i=0; i<battle.bullet_list.Length; i++){ //18
-            if (bullet_type==battle.bullet_list[i].bullet_type){
+        for (int i=0; i<battle.bullet_list.Length; i++){ //19
+            float  bullet_max_value=battle.bullet_list[i].max_value;
+            if (bullet_type==battle.bullet_list[i].bullet_type && bullet_max_value>0){
                 ret[temp_point]=bullet_value/bullet_max_value;
                 temp_point++;
             }else{
@@ -161,56 +181,106 @@ public class PlayerAttr : MonoBehaviour
                 temp_point++;
             }
         }
+        // debug_count=debug_count+1;
+        // if (gameObject.name=="Red" && debug_count%5==0){
+        //     string debug_str="";
+        //     for (int i=0; i<ret.Length;i++){
+        //         debug_str=debug_str+" "+ret[i].ToString();
+        //     }
+        //     Debug.Log(debug_str);
+        // }
         return ret;
     }
     public void AddHPRecover(float amount){
+        int last_amount=hp_recover;
         hp_recover=hp_recover+(int)amount;
         if (hp_recover>max_hp_recover){
             hp_recover=max_hp_recover;
         }
+        visual.ShowEffectText("Hp Recover",hp_recover-last_amount);
+        battle.UpdateAttrText();
     }
     public void AddMPRecover(float amount){
+        int last_amount=mp_recover;
         mp_recover=mp_recover+(int)amount;
         if (mp_recover>max_mp_recover){
             mp_recover=max_mp_recover;
         }
+        visual.ShowEffectText("Mp Recover",mp_recover-last_amount);
+        battle.UpdateAttrText();
     }
     public void AddRange(float amount){
+        int last_amount=range;
         range=range+(int)amount;
         if (range>max_range){
             range=max_range;
         }
+        visual.ShowEffectText("Range",range-last_amount);
+        battle.UpdateAttrText();
     }
     public void AddLuk(float amount){
-        luk=luk+(int)amount;
+        float last_amount=luk;
+        luk=luk+amount;
         if (luk>max_luk){
             luk=max_luk;
         }
+        visual.ShowEffectText("Luk",luk-last_amount);
+        battle.UpdateAttrText();
     }
     public void AddSpd(float amount){
-        mov_spd=mov_spd+(int)amount;
+        float last_amount=mov_spd;
+        mov_spd=mov_spd+amount;
         if (mov_spd>max_mov_spd){
             mov_spd=max_mov_spd;
         }
+        visual.ShowEffectText("Speed",mov_spd-last_amount);
+        battle.UpdateAttrText();
     }
     public void AddBulletSpd(float amount){
+        int last_amount=bullet_spd;
         bullet_spd=bullet_spd+(int)amount;
         if (bullet_spd>max_bullet_spd){
             bullet_spd=max_bullet_spd;
         }
+        visual.ShowEffectText("Bullet Spd",bullet_spd-last_amount);
+        battle.UpdateAttrText();
     }
     public void ResetHp(){
+        if (hp<max_hp){
+            visual.ShowHealText(max_hp-hp);
+        }
         hp=max_hp;
         visual.UpdateHpMpUI();
     }
     public void AddHp(float amount){
+        int last_hp=hp;
         hp=hp+(int)amount;
+        
         if (hp>max_hp){
             hp=max_hp;
         }
+        if (hp-last_hp>0){
+            visual.ShowHealText(hp-last_hp);
+        }
         visual.UpdateHpMpUI();
     }
+    public void AddMp(float amount){
+        int last_mp=mp;
+        mp=mp+(int)amount;
+        
+        if (mp>max_mp){
+            mp=max_mp;
+        }
+        if (mp-last_mp>0){
+            visual.ShowMpText(mp-last_mp);
+        }
+        visual.UpdateHpMpUI();
+    }
+    
     public void ResetMp(){
+        if (mp<max_mp){
+            visual.ShowMpText(max_mp-mp);
+        }
         mp=max_mp;
         visual.UpdateHpMpUI();
     }
@@ -218,13 +288,20 @@ public class PlayerAttr : MonoBehaviour
         bounce_count=bounce_count+1;
         if (bounce_count>max_bounce_count){
             bounce_count=max_bounce_count;
+        }else{
+            visual.ShowEffectText("Bounce",1);
         }
+        
+        battle.UpdateAttrText();
     }
     public void AddShootCount(){
         shoot_count=shoot_count+1;
         if (shoot_count>max_shoot_count){
             shoot_count=max_shoot_count;
+        }else{
+            visual.ShowEffectText("Shoot",1);
         }
+        battle.UpdateAttrText();
     }
     public int GetHpRecover(){
         return base_hp_recover+hp_recover;
@@ -244,53 +321,56 @@ public class PlayerAttr : MonoBehaviour
     public int GetBulletSpd(){
         return base_bullet_spd+bullet_spd;
     }
+    public int GetBounceCount(){
+        return base_bounce_count+bounce_count;
+    }
+    public int GetShootCount(){
+        return base_shoot_count+shoot_count;
+    }
     public void ApplyBuf(string buf_type, float time){
         if (buf_type==""){
             return;
         }
         int buf_id=battle.buf_id_table[buf_type];
         bufs[buf_id]=bufs[buf_id]+time;
-        if (bufs[buf_id]<battle.buf_list[buf_id].max_buf_time){
+        if (bufs[buf_id]>battle.buf_list[buf_id].max_buf_time){
             bufs[buf_id]=battle.buf_list[buf_id].max_buf_time;
         }
     }
     public void ApplyBullet(string bullet_type_){
-        if (bullet_type==""){
+        int bullet_id = battle.bullet_id_table[bullet_type_];
+        if (bullet_type=="VANILLA"){
             bullet_type=bullet_type_;
+            bullet_value=bullet_value+battle.bullet_list[bullet_id].value;
         }else{
             if(bullet_type==bullet_type_){
-                int bullet_id = battle.bullet_id_table[bullet_type_];
                 bullet_value=bullet_value+battle.bullet_list[bullet_id].value;
                 if (bullet_value>battle.bullet_list[bullet_id].max_value){
                     bullet_value=battle.bullet_list[bullet_id].max_value;
                 }
             }
         }
+        visual.ShowEffectText("Bullet "+bullet_type_,battle.bullet_list[bullet_id].value);
+        battle.UpdateAttrText();
     }
     void FixedUpdate(){
-        if (dead){
-            return;
-        }
         float d_time=Time.fixedDeltaTime;
         for (int i=0; i<bufs.Length; i++){
             if (bufs[i]>0){
+                visual.SetBufFx(i, true);
                 bufs[i]=bufs[i]-d_time;
                 if (bufs[i]<0){
                     bufs[i]=0;
                 }
+            }else{
+                visual.SetBufFx(i, false);
             }
         }
         float time_now=Time.fixedTime;
         if (time_now-recover_time>1){
-            mp=mp+mp_recover;
-            if (mp>max_mp){
-                mp=max_mp;
-            }
             if (time_now - last_battle_time>=5){
-                hp=hp+hp_recover;
-                if (hp>max_hp){
-                    hp=max_hp;
-                }
+                AddHp(GetHpRecover());
+                AddMp(GetMpRecover());
             }
             recover_time=time_now;
             visual.UpdateHpMpUI();
@@ -309,6 +389,12 @@ public class PlayerAttr : MonoBehaviour
             attacker.OnDamageOther(damage, false);
         }
         visual.UpdateHpMpUI();
+        if(damage==attacker.atk){
+            visual.ShowCriticalText(damage);
+        }else{
+            visual.ShowDamageText(damage);
+        }
+        
         last_battle_time=Time.fixedTime;
         
     }
@@ -319,6 +405,7 @@ public class PlayerAttr : MonoBehaviour
         }
         if (b_kill){
             kill_count=kill_count+1;
+            battle.UpdateRankText();
             if (kill_count==1){
                 agent.AddRewardCustom(1, "kill");
             }
@@ -329,6 +416,7 @@ public class PlayerAttr : MonoBehaviour
         if (battle.train_mode==false){
             visual.PlayExplodeFx();
         }
+        death_count=death_count+1;
         ResetAttr();
     }
 

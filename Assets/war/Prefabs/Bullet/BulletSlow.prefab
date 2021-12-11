@@ -24332,6 +24332,8 @@ MonoBehaviour:
   bullet_type: SLOW
   value: 0.2
   max_value: 1
+  fx_hit: {fileID: 1090680790622714, guid: 8d76bc8ce0951704d8b79455dd6f4105, type: 3}
+  fx_muzzle: {fileID: 1234945742121850, guid: b8672c4ee4aac654bae312a0b8ef050c, type: 3}
 --- !u!1 &1615777242882382
 GameObject:
   m_ObjectHideFlags: 0

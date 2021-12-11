@@ -13,18 +13,15 @@ public class UIJoystick : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     public Vector2 position;
     private bool isDragging = false;
     private RectTransform thumb;
-    void Start()
-    {
+    void Start(){
         thumb = target.GetComponent<RectTransform>();
     }
-    public void OnBeginDrag(PointerEventData data)
-    {
+    public void OnBeginDrag(PointerEventData data){
         isDragging = true;
         if(onDragBegin != null)
             onDragBegin();
     }
-    public void OnDrag(PointerEventData data)
-    {
+    public void OnDrag(PointerEventData data){
         RectTransform draggingPlane = transform as RectTransform;
         Vector3 mousePos;
         if (RectTransformUtility.ScreenPointToWorldPointInRectangle(draggingPlane, data.position, data.pressEventCamera, out mousePos))
@@ -39,13 +36,11 @@ public class UIJoystick : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         position = target.localPosition;
         position = position / radius * Mathf.InverseLerp(radius, 2, 1);
     }
-    void Update()
-    {
+    void Update(){
         if(isDragging && onDrag != null)
             onDrag(position);
     }
-    public void OnEndDrag(PointerEventData data)
-    {
+    public void OnEndDrag(PointerEventData data){
         position = Vector2.zero;
         target.position = transform.position;
         isDragging = false;

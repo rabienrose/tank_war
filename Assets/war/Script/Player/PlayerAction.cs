@@ -30,7 +30,6 @@ public class PlayerAction : MonoBehaviour
     };
     PlayerAttr attr;
     PlayerVisual visual;
-    public bool TouchMode=false;
     bool ready_fire=false;
     public CamPlayer cam;
     public UIJoystick ui_control;
@@ -42,11 +41,15 @@ public class PlayerAction : MonoBehaviour
     Action next_action=new Action();
     Battle battle;
     GamePool game_pool;
+    bool react_2_action=true;
+    PlayerAgent agent;
     void Start(){
         rigidb=GetComponent<Rigidbody>();
         attr=GetComponent<PlayerAttr>();
+        battle=attr.battle;
         visual=GetComponent<PlayerVisual>();
-        game_pool=GetComponent<GamePool>();
+        game_pool=battle.GetComponent<GamePool>();
+        agent=GetComponent<PlayerAgent>();
         if(FireButton){
             FireButton.onClick.AddListener(OnFireButton);
         }
@@ -57,9 +60,16 @@ public class PlayerAction : MonoBehaviour
         }
     }
     void Update(){
+        if (react_2_action==false){
+            return;
+        }
         next_action.mov=Action.DIR.STOP;
         if (joy_posi.magnitude>0.5){
-            float angle = Vector2.Angle(new Vector2(1,0), joy_posi);
+            float angle = Vector2.Angle(joy_posi , new Vector2(-1,0));
+            if (joy_posi.y<0){
+                angle=-angle;
+            }
+            angle=180-angle;
             if (angle>=337.5 || angle<=22.5){
                 next_action.mov=Action.DIR.R;
             }else if (angle>=22.5 && angle<=67.5){
@@ -79,24 +89,25 @@ public class PlayerAction : MonoBehaviour
             }
         }
 
-        if (Input.GetKey(KeyCode.A)){
-            next_action.mov=Action.DIR.L;
-        }else if(Input.GetKey(KeyCode.A) && Input.GetKey(KeyCode.W)){
+        if(Input.GetKey(KeyCode.A) && Input.GetKey(KeyCode.W)){
             next_action.mov=Action.DIR.LU;
-        }else if(Input.GetKey(KeyCode.W)){
-            next_action.mov=Action.DIR.U;
         }else if(Input.GetKey(KeyCode.D) && Input.GetKey(KeyCode.W)){
             next_action.mov=Action.DIR.RU;
-        }else if(Input.GetKey(KeyCode.D)){
-            next_action.mov=Action.DIR.R;
         }else if(Input.GetKey(KeyCode.D) && Input.GetKey(KeyCode.S)){
             next_action.mov=Action.DIR.RD;
-        }else if(Input.GetKey(KeyCode.S)){
-            next_action.mov=Action.DIR.D;
         }else if(Input.GetKey(KeyCode.A) && Input.GetKey(KeyCode.S)){
             next_action.mov=Action.DIR.LD;
+        }else if (Input.GetKey(KeyCode.A)){
+            next_action.mov=Action.DIR.L;
+        }else if(Input.GetKey(KeyCode.W)){
+            next_action.mov=Action.DIR.U;
+        }else if(Input.GetKey(KeyCode.D)){
+            next_action.mov=Action.DIR.R;
+        }else if(Input.GetKey(KeyCode.S)){
+            next_action.mov=Action.DIR.D;
         }
         if (Input.GetKey(KeyCode.Space)){
+            react_2_action=false;
             next_action.fire=1;
         }else{
             next_action.fire=0;
@@ -108,14 +119,14 @@ public class PlayerAction : MonoBehaviour
         if (battle.train_mode==false){
             bullet_type=attr.bullet_type;
         }
-        game_pool.CreateBullet(bullet_type, shotPos.localPosition, turret.forward, attr);
-        if (attr.shoot_count>1){
-            for (int i=1; i<attr.shoot_count; i++){
+        game_pool.CreateBullet(bullet_type, shotPos.position, turret.forward, attr);
+        if (attr.GetShootCount()>1){
+            for (int i=1; i<attr.GetShootCount(); i++){
                 float rand_angle = UnityEngine.Random.value*40-20;
                 Vector3 forward = new Vector3(shotPos.forward.x, 0, shotPos.forward.z);
                 turret.eulerAngles=new Vector3(0, turret.eulerAngles.y+rand_angle, 0);
                 Quaternion rand_dir= Quaternion.Euler(0, turret.eulerAngles.y+rand_angle, 0);
-                game_pool.CreateBullet(bullet_type, shotPos.localPosition, turret.forward, attr);
+                game_pool.CreateBullet(bullet_type, shotPos.position, turret.forward, attr);
             }
         }
         attr.last_battle_time=Time.fixedTime;
@@ -136,47 +147,75 @@ public class PlayerAction : MonoBehaviour
         joy_posi=new Vector2();
     }
 
+    void OnCollisionEnter(Collision col){
+        GameObject obj = col.gameObject;
+        if (obj.tag=="Wall" && obj!=gameObject){
+            agent.AddRewardCustom(-0.01f, "wall");
+        }
+    }
+
+    public float[] GetCollectableObs(){
+        float[] out_obs=new float[battle.collectables.Length*3];
+        for (int i=0; i<battle.collectables.Length; i++){
+            Collectable col=battle.collectables[i];
+            if (col.IsEmpty()){
+                out_obs[i*3]=0;
+            }else{
+                out_obs[i*3]=1;
+            }
+            out_obs[i*3+1]=(col.transform.localPosition.x-transform.localPosition.x)/battle.field_w;
+            out_obs[i*3+2]=(col.transform.localPosition.z-transform.localPosition.z)/battle.field_h;
+        }
+        return out_obs;
+    }
+
     public float[] GetBulletObs(){
         float[] out_obs= new float[battle.max_bullet_obs*4];
         Transform[] bullets = game_pool.GetAllBullets();
+        // Debug.Log(bullets.Length);
         List<Transform> filtered_bullet=new List<Transform>();
         for (int i=0; i<bullets.Length; i++){
+            if(bullets[i].GetComponent<Bullet>().onwer==attr){
+                continue;
+            }
             Vector3 t_dir=transform.localPosition-bullets[i].localPosition;
             Vector3 t_dir_n=t_dir.normalized;
             float dot = bullets[i].forward.x*t_dir_n.x+bullets[i].forward.z*t_dir_n.z;
-            if (t_dir.magnitude<2){
+            float dist=t_dir.magnitude;
+            if (dist>10){
+                continue;
+            }
+            if (dist<5){
                 if (dot>0){
                     filtered_bullet.Add(bullets[i]);
                 }
             }else{
-                if (dot>0.5 && t_dir.magnitude<10){
+                if (dot>0.8){
                     Ray ray = new Ray(bullets[i].position, t_dir_n);
                     RaycastHit hit;
-                    if(!Physics.SphereCast(ray, 0.2f, out hit, t_dir.magnitude, 1 << 0)){
+                    if(!Physics.SphereCast(ray, 0.2f, out hit, t_dir.magnitude, 1 << 3)){
                         filtered_bullet.Add(bullets[i]);
                     }
                 }
             }
         }
-        if (filtered_bullet.Count>=battle.max_bullet_obs){
-            float[] b_dists=new float[filtered_bullet.Count];
-            Transform[] items=new Transform[filtered_bullet.Count];
-            for (int i=0; i<filtered_bullet.Count; i++){
-                float dist = Vector3.Distance(transform.localPosition, filtered_bullet[i].localPosition);
-                b_dists[i]=dist;
-                items[i]=filtered_bullet[i];
-            }
-            Array.Sort( b_dists, items);
+        float[] b_dists=new float[filtered_bullet.Count];
+        Transform[] sort_bullets=new Transform[filtered_bullet.Count];
+        for (int i=0; i<filtered_bullet.Count; i++){
+            float dist = Vector3.Distance(transform.localPosition, filtered_bullet[i].localPosition);
+            b_dists[i]=dist;
+            sort_bullets[i]=filtered_bullet[i];
         }
-        int item_count=filtered_bullet.Count;
+        Array.Sort( b_dists, sort_bullets);
+        int item_count=sort_bullets.Length;
         if (item_count>battle.max_bullet_obs){
             item_count=battle.max_bullet_obs;
         }
         for (int i=0; i<item_count; i++){
-            out_obs[i*3+0]=filtered_bullet[i].localPosition.x/battle.field_w;
-            out_obs[i*3+1]=filtered_bullet[i].localPosition.y/battle.field_h;
-            out_obs[i*3+2]=filtered_bullet[i].GetComponent<Rigidbody>().velocity.magnitude/attr.max_bullet_spd;
-            out_obs[i*3+3]=filtered_bullet[i].eulerAngles.y;
+            out_obs[i*4+0]=(sort_bullets[i].localPosition.x-transform.localPosition.x)/10;
+            out_obs[i*4+1]=(sort_bullets[i].localPosition.z-transform.localPosition.z)/10;
+            out_obs[i*4+2]=sort_bullets[i].GetComponent<Rigidbody>().velocity.magnitude/attr.max_bullet_spd;
+            out_obs[i*4+3]=sort_bullets[i].eulerAngles.y/360f;
         }
         return out_obs;
     }
@@ -209,46 +248,51 @@ public class PlayerAction : MonoBehaviour
             transform.forward=new Vector3(0.707f,0,0);
         }else if(act.mov==PlayerAction.Action.DIR.RD){
             transform.forward=new Vector3(0.707f,0,-0.707f);
+        }else{
+            speed_rate=0;
         }
 
-        rigidb.velocity = transform.forward * attr.mov_spd*speed_rate;
+        rigidb.velocity = transform.forward * attr.GetSpd()*speed_rate;
         if (can_attack && act.fire==1 && attr.mp>=10){
             PlayerAttr[] players= battle.GetAllPlayers();
             float min_dist=-1;
             Vector3 min_posi=new Vector3(0,0,0);
             for (int i=0; i<players.Length; i++){
-                if (players[i]==this){
+                if (players[i]==attr){
                     continue;
                 }
                 float temp_dis = (players[i].transform.localPosition-transform.localPosition).magnitude;
+                
                 if (min_dist==-1 || min_dist>temp_dis){
                     Vector3 t_dir=transform.localPosition-players[i].transform.localPosition;
                     Ray ray = new Ray(players[i].transform.localPosition, t_dir);
                     RaycastHit hit;
-                    if(!Physics.SphereCast(ray, 0.2f, out hit, t_dir.magnitude, 1 << 0)){
+                    if(Physics.SphereCast(ray, 0.2f, out hit, t_dir.magnitude, 1<<3)){
                         continue;
                     }
                     min_dist=temp_dis;
                     min_posi=players[i].transform.localPosition;
                 }
             }
-            if (min_dist<20){
+            
+            if (min_dist<attr.GetRange() && min_dist>0){
                 Vector3 d_vec = min_posi-transform.localPosition;
                 float angle = Vector3.Angle(new Vector3(1,0,0), d_vec);
                 if (d_vec.z<0){
                     angle=-angle;
                 }
                 angle=90-angle;
+                visual.RotTurret(angle);
+                Shoot();
+            }else{
+                visual.RotTurret(transform.eulerAngles.y);
                 Shoot();
             }
         }
     }
 
     public Action GetAction(){
-        Action action=new Action();
-        action.mov=next_action.mov;
-        action.fire=next_action.fire;
-        action=new Action();
-        return action;
+        react_2_action=true;
+        return next_action;
     }
 }

@@ -70,6 +70,8 @@ MonoBehaviour:
   bullet_type: MUTE
   value: 0.2
   max_value: 1
+  fx_hit: {fileID: 1090680790622714, guid: 835b238b540c85940a85e07788ba6f6e, type: 3}
+  fx_muzzle: {fileID: 1652530240435552, guid: 058bfe964b80b1e4f920fa3c237a8666, type: 3}
 --- !u!135 &1260035704940489223
 SphereCollider:
   m_ObjectHideFlags: 0

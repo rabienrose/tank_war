@@ -9,14 +9,14 @@ public class CamPlayer : MonoBehaviour
     public PlayerAttr target;
     public bool b_follow=true;
     Vector3 last_mouse_pos;
-    public Button CamModeButton;
+    public Button cam_mode_btn;
     bool is_shaking=false;
     public void OnCamMode(){
         b_follow=!b_follow;
     }
 
     void Start(){
-        CamModeButton.onClick.AddListener(OnCamMode);
+        cam_mode_btn.onClick.AddListener(OnCamMode);
     }
 
 	public void ShakeCamera() {	

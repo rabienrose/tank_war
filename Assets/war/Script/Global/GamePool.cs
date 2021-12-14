@@ -36,6 +36,8 @@ public class GamePool:MonoBehaviour
         if (ps == null){
             var psChild = hitVFX.transform.GetChild(0).GetComponent<ParticleSystem>();
             Destroy(hitVFX, psChild.main.duration);
+        }else{
+            Destroy(hitVFX, ps.main.duration);
         }
     }
     public void ShowMuzzleFx(Vector3 position, Vector3 forward, GameObject fx_prefab){
@@ -43,8 +45,11 @@ public class GamePool:MonoBehaviour
         var muzzleVFX = Instantiate (fx_prefab, position, Quaternion.identity,fx_root);
         muzzleVFX.transform.forward = forward;
         var ps = muzzleVFX.GetComponent<ParticleSystem>();
-        if (ps != null){
-            Destroy (muzzleVFX, ps.main.duration);
+        if (ps == null){
+            var psChild = muzzleVFX.transform.GetChild(0).GetComponent<ParticleSystem>();
+            Destroy(muzzleVFX, psChild.main.duration);
+        }else{
+            Destroy(muzzleVFX, ps.main.duration);
         }
     }
     public void ClearDynObjs(){

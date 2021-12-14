@@ -64,7 +64,7 @@ MonoBehaviour:
   collectable_type: MP
   value: 0
   bullet_type: 
-  respawn_time: 15
+  respawn_time: 5
   render_obj: {fileID: 7486068241281665171}
   battle: {fileID: 0}
   tip: Mp

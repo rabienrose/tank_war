@@ -64,7 +64,7 @@ MonoBehaviour:
   collectable_type: RANGE
   value: 5
   bullet_type: 
-  respawn_time: 30
+  respawn_time: 20
   render_obj: {fileID: 1024972291683954951}
   battle: {fileID: 0}
   tip: Range

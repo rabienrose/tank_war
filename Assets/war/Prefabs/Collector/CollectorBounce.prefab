@@ -64,7 +64,7 @@ MonoBehaviour:
   collectable_type: BOUNCE_COUNT
   value: 0
   bullet_type: 
-  respawn_time: 30
+  respawn_time: 20
   render_obj: {fileID: 8485675133772448632}
   battle: {fileID: 0}
   tip: Bounce

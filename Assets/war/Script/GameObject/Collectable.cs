@@ -38,7 +38,10 @@ public class Collectable : MonoBehaviour
         GameObject obj = col.gameObject;
         if (obj.tag=="Player"){
             PlayerAttr player = col.GetComponent<PlayerAttr>();
-            col.GetComponent<PlayerAgent>().AddRewardCustom(0.1f,"col");
+            player.col_count=player.col_count+1;
+            if (player.col_count>3){
+                col.GetComponent<PlayerAgent>().AddRewardCustom(0.2f,"col");
+            }
             int bullet_id = battle.collectable_id_table[this];
             if (collectable_type=="HP"){
                 player.ResetHp();                

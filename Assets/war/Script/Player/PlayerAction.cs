@@ -150,12 +150,12 @@ public class PlayerAction : MonoBehaviour
     void OnCollisionEnter(Collision col){
         GameObject obj = col.gameObject;
         if (obj.tag=="Wall" && obj!=gameObject){
-            agent.AddRewardCustom(-0.01f, "wall");
+            agent.AddRewardCustom(-0.05f, "wall");
         }
     }
 
     public float[] GetCollectableObs(){
-        float[] out_obs=new float[battle.collectables.Length*3];
+        float[] out_obs=new float[battle.collectables.Length*4];
         for (int i=0; i<battle.collectables.Length; i++){
             Collectable col=battle.collectables[i];
             if (col.IsEmpty()){
@@ -165,6 +165,7 @@ public class PlayerAction : MonoBehaviour
             }
             out_obs[i*3+1]=(col.transform.localPosition.x-transform.localPosition.x)/battle.field_w;
             out_obs[i*3+2]=(col.transform.localPosition.z-transform.localPosition.z)/battle.field_h;
+            out_obs[i*3+3]=(col.transform.localPosition.z-transform.localPosition.z)/battle.field_h;
         }
         return out_obs;
     }

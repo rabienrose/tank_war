@@ -33,10 +33,12 @@ public class Battle:MonoBehaviour
         if (train_mode || rank_text==null){
             return;
         }
-        int[] scores=new int[players.Length];
+        float[] scores=new float[players.Length];
         int[] player_ids=new int[players.Length];
         for (int i=0; i<players.Length; i++){
-            scores[i]=players[i].kill_count-players[i].death_count;
+            PlayerAttr p=players[i];
+            float score = p.GetScore();
+            scores[i]=score;
             player_ids[i]=i;
         }
         Array.Sort( scores, player_ids);
@@ -44,7 +46,7 @@ public class Battle:MonoBehaviour
         
         for (int i=player_ids.Length-1; i>=0; i--){
             PlayerAttr p=players[player_ids[i]];
-            string item_text = "<color="+p.color_str+">"+p.gameObject.name+": "+"<b>"+scores[i].ToString()+"/"+p.kill_count.ToString()+"</b>"+"</color>";
+            string item_text = "<color="+p.color_str+">"+p.gameObject.name+": "+"<b>"+scores[i].ToString()+"/"+p.kill_count.ToString()+"/"+p.death_count.ToString()+"</b>"+"</color>";
             rich_text=rich_text+item_text+"\n";
         }
         rank_text.text=rich_text;
@@ -116,7 +118,7 @@ public class Battle:MonoBehaviour
     void RestartBattle(){
         for (int i=0; i<players.Length;i++){
             PlayerAgent agent=players[i].GetComponent<PlayerAgent>();
-            agent.AddRewardCustom(players[i].kill_count-players[i].death_count, "end");
+            agent.AddRewardCustom(players[i].GetScore(), "end");
             agent.GetComponent<PlayerAttr>().ClearStats();
             agent.EndEpisode();
         }

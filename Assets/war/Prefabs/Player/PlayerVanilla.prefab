@@ -93,7 +93,7 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 5022602860645237092, guid: 0f76fb478295e6dc1a989242fd80040c, type: 3}
+  m_Model: {fileID: 0}
   m_InferenceDevice: 0
   m_BehaviorType: 0
   m_BehaviorName: tank
@@ -168,7 +168,7 @@ MonoBehaviour:
   def: 0.5
   atk: 38
   max_mp_recover: 20
-  max_hp_recover: 20
+  max_hp_recover: 40
   max_mov_spd: 5
   max_luk: 0.8
   max_range: 40

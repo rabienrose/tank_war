@@ -27,6 +27,7 @@ public class PlayerAgent : Agent
     
     public override void CollectObservations(VectorSensor sensor)
     {
+        // AddRewardCustom(-0.001f,"time");
         float[] obs = attr.GetPlayerObs(attr);
         sensor.AddObservation(obs);
         PlayerAttr[] players = battle.GetAllPlayers();

@@ -64,7 +64,7 @@ MonoBehaviour:
   collectable_type: LUK
   value: 0.2
   bullet_type: 
-  respawn_time: 30
+  respawn_time: 20
   render_obj: {fileID: 4459977876807259434}
   battle: {fileID: 0}
   tip: Luk

@@ -51,7 +51,7 @@ public class PlayerAttr : MonoBehaviour
     int debug_count=0;
     // config
     public string color_str;
-    
+    public int col_count=0;
     
     // Comp
     public Battle battle;
@@ -99,6 +99,7 @@ public class PlayerAttr : MonoBehaviour
         hp=max_hp;
         bullet_type="VANILLA"; 
         bullet_value=0;
+        col_count=0;
         visual.UpdateHpMpUI();
         battle.UpdateAttrText();
     }
@@ -143,7 +144,7 @@ public class PlayerAttr : MonoBehaviour
         int temp_point=0;
         ret[temp_point]=(transform.localPosition.x-master.transform.localPosition.x)/battle.field_w; //1
         temp_point++;
-        ret[temp_point]=(transform.localPosition.z-master.transform.localPosition.x)/battle.field_h; //2
+        ret[temp_point]=(transform.localPosition.z-master.transform.localPosition.z)/battle.field_h; //2
         temp_point++;
         ret[temp_point]=transform.localEulerAngles.y/360; //3
         temp_point++;
@@ -370,8 +371,8 @@ public class PlayerAttr : MonoBehaviour
         if (time_now-recover_time>1){
             if (time_now - last_battle_time>=5){
                 AddHp(GetHpRecover());
-                AddMp(GetMpRecover());
             }
+            AddMp(GetMpRecover());
             recover_time=time_now;
             visual.UpdateHpMpUI();
         }
@@ -399,24 +400,31 @@ public class PlayerAttr : MonoBehaviour
         
     }
     public void OnDamageOther(int damage, bool b_kill){
-        if (give_reward_to_damage==false){
-            give_reward_to_damage=true;
-            agent.AddRewardCustom(0.05f, "damage");
+        if (damage>0){
+            agent.AddRewardCustom(0.002f, "kill");
         }
         if (b_kill){
             kill_count=kill_count+1;
             battle.UpdateRankText();
-            if (kill_count==1){
-                agent.AddRewardCustom(1, "kill");
-            }
+            // if (kill_count==1){
+                agent.AddRewardCustom(0.2f, "kill");
+            // }
             visual.ShakeCamera();
         }
+    }
+
+    public float GetScore(){
+        float score= (float)kill_count/((float)death_count+1f);
+        score = (float)Math.Round(score,2);
+        return score;
     }
     void OnDead(){
         if (battle.train_mode==false){
             visual.PlayExplodeFx();
         }
         death_count=death_count+1;
+        // agent.AddRewardCustom(GetScore(), "end");
+        // agent.EndEpisode();
         ResetAttr();
     }
 

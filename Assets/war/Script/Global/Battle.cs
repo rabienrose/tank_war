@@ -14,7 +14,9 @@ public class Battle:MonoBehaviour
     public Transform[] spawn_posis;
     public GamePool game_pool;
     // collectables
-    public Collectable[] collectables;
+    Collectable[] collectables;
+    public Transform[] col_spawn_posi;
+    public GameObject[] col_configs;
     public Dictionary<Collectable, int> collectable_id_table=new Dictionary<Collectable, int>();
     //bufs
     public BufScriptableObject[] buf_list;
@@ -56,6 +58,15 @@ public class Battle:MonoBehaviour
             return;
         }
         attr_text.text=players[0].GetAttrStr();
+    }
+
+    void UpdateCollectable(){
+        for (int i=0; i<col_spawn_posi.Length; i++){
+            if (col_spawn_posi[i].childCount==0){
+                int rand_id = UnityEngine.Random.Range (0, col_configs.Length);
+                Instantiate(col_configs[rand_id], col_spawn_posi[i].position, Quaternion.identity,col_spawn_posi[i]);
+            }
+        }
     }
 
     void Start(){
@@ -102,6 +113,7 @@ public class Battle:MonoBehaviour
     
 
     void FixedUpdate(){
+        UpdateCollectable();
         battle_countdown=battle_countdown-Time.fixedDeltaTime;
         if(battle_countdown<0){
             RestartBattle();

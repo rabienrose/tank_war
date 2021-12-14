@@ -13,11 +13,18 @@ public class Collectable : MonoBehaviour
     public Battle battle;
     Transform tip_hub;
     public string tip;
+    public bool spawned;
 
     void Start () {
         Text tip_text = transform.GetChild(2).GetChild(0).GetChild(0).GetComponent<Text>();
         tip_text.text=tip;
         tip_hub=transform.GetChild(2);
+        if (respawn==false){
+            render_obj.SetActive(false);
+            spawned=false;
+        }else{
+            spawned=true;
+        }
     }    
     public bool IsEmpty(){
         if (render_obj.activeSelf){
@@ -29,6 +36,7 @@ public class Collectable : MonoBehaviour
     public void ResetCollect(){
         render_obj.SetActive(true);
         cul_time=0;
+        spawned=true;
     }
     void OnTriggerEnter(Collider col)
     {
@@ -66,7 +74,11 @@ public class Collectable : MonoBehaviour
             }else if(bullet_type!=""){
                 player.ApplyBullet(bullet_type);
             }
-            render_obj.SetActive(false);
+            if (respawn==false){
+                DestroyImmediate(gameObject);
+            }else{
+                render_obj.SetActive(false);
+            }
         }
     }
     public void ToggleTip(){
@@ -78,14 +90,21 @@ public class Collectable : MonoBehaviour
     }
     void FixedUpdate(){
         if (respawn==false){
-            return;
-        }
-        if (IsEmpty()){
-            cul_time=cul_time+Time.fixedDeltaTime;
-            if (cul_time>respawn_time){
-                ResetCollect();
+            if (IsEmpty()){
+                cul_time=cul_time+Time.fixedDeltaTime;
+                if (cul_time>respawn_time){
+                    ResetCollect();
+                }
+            }
+        }else{
+            if (spawned==false){
+                cul_time=cul_time+Time.fixedDeltaTime;
+                if (cul_time>respawn_time){
+                    ResetCollect();
+                }
             }
         }
+        
         
     }
 }
